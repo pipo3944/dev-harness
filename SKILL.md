@@ -48,6 +48,16 @@ so a human can follow along and intervene at any gate.
     self-contained artifacts and the context already holds what they need.
   - Collapsing layers into one session is fine for small tasks — but only with
     explicit user agreement, never by default. The `.dev/` files make any choice work.
+- **One STATE writer, reserved role names.** Multiple sessions writing `STATE.md`
+  causes update races and "progress the orchestrator never saw". So:
+  - **Role names are reserved.** "オーケストレーター" = the single session running
+    plan→PR (gates + commits + STATE). Other sessions are "ワーカー" (phase execution)
+    or "レビューア" (self-review) — they must **not** call themselves orchestrator,
+    even when they end up applying fixes.
+  - **Only the orchestrator writes `STATE.md`.** Workers/reviewers report **only via
+    `report.md`**. If a reviewer session applies fixes or makes a gate call, reflecting
+    that into `STATE.md` is still the orchestrator's job (it reads the report and
+    updates STATE). This keeps STATE a single, non-conflicting source of truth.
 - **Proportional ceremony.** This is the default full flow. For smaller issues,
   it's fine to propose simplifying, merging, or skipping steps — just say so and
   get the user's agreement.
@@ -97,7 +107,11 @@ This harness is meant to span multiple sessions. On **every** invocation:
    - **Found** → read it, tell the user where things stand, resume at `current-step`.
 
 Keep `STATE.md` updated as you complete each step — it is the single source of
-truth for "where are we". Template:
+truth for "where are we". **Whenever you invent an internal symbol** (approach
+names, question/option labels, unresolved-point tags — anything a worker might echo
+into code/UI), append it to the **内部記号レジストリ** section immediately. Step 8's
+hygiene grep seeds are generated from it, so an un-logged symbol won't be caught.
+Template:
 
 ```markdown
 # State: #142 cart-total-rounding
@@ -116,6 +130,12 @@ issue: #142
 - [ ] hygiene
 - [ ] final-report
 - [ ] pr
+
+## 内部記号レジストリ
+<!-- 本運行で発明・使用した内部記号を、生まれるたびにここへ追記する。
+     Step 8 hygiene の grep 種はこのレジストリから生成される。
+     例: 案A/案A'/案B（approach 呼称）, Q3/Q4（論点）, U1〜U3（未解決点）, ターゲット(a)/(b) -->
+- （なし）
 
 ## メモ
 次にやること: ...
@@ -159,21 +179,33 @@ review.
 - This is a **design** review (pre-implementation), distinct from Step 7's
   post-implementation diff review. Don't conflate them.
 - Skippable for small tasks (proportional ceremony) with the user's agreement.
+- **Explain-first の申し出（任意）:** 方針 GATE をかける前に、
+  「理解を助ける explain を**先に**作りますか？」と聞いてよい。approach は arch-review を
+  通してほぼ確定しているので、ここで建てても draft 作り直しのリスクは小さい。要ると言われたら
+  Step 4 を先に実施し、その explain を判断材料にして方針 GATE をかける。順序は固定しない
+  （デフォルトは下記の「方針 GATE → explain」でよいが、この選択肢を明示する）。
 - → **GATE: 方針 OK?** (the now-refined approach)
 
-### 4. Explain (optional) — reflects the FINAL approach
+### 4. Explain (optional) — reflects the (near-)final approach
 
-Built *after* the approach is settled, so the "how to fix" visuals show the approach
-you'll actually implement (not a draft that gets revised away).
+Built once the approach is settled, so the "how to fix" visuals show the approach
+you'll actually implement (not a draft that gets revised away). May run **before the
+方針 GATE** if the user takes the explain-first offer in Step 3 — the arch-reviewed
+approach is already near-final, so building here is safe; if the gate then changes the
+approach materially, lightly follow up the explain.
 
-- Ask the user whether they want it. Respect a "不要" and skip to Step 5.
+- Ask the user whether they want it (unless already agreed via the Step 3 offer).
+  Respect a "不要" and skip to Step 5.
 - Write `docs/explain/order.md` pointing the builder at
-  `references/explain-checklist.md` (it defines the required content so the doc
-  conveys substance, not decoration).
+  `references/explain-checklist.md` — it defines both the **required content** and the
+  **構成の鉄則（順序）**: lead with what's being built/fixed and a concrete scenario;
+  fold internal structure/mechanism to the end. Works for both bug fixes and new
+  features (read "問題" as "the pain this change removes" for features).
 - Build `docs/explain/index.html` — HTML + canvas visuals (state transitions /
-  sequence / data flow). **Spawn a subagent** (default). It must cover: what's wrong,
-  *where* (file:line), *why* (root cause), and *how* to fix (the confirmed approach) —
-  readable by a non-expert yet conveying the essence.
+  sequence / data flow, scenario-driven — not an arch diagram for its own sake).
+  **Spawn a subagent** (default). It must cover: what's being built/fixed, the concrete
+  scenario, *why* (root cause), and *how* (the confirmed approach); *where* (file:line)
+  and internals belong near the end — readable by a non-expert yet conveying the essence.
 - → **GATE: 理解 OK?** Refine if not.
 
 ### 5. Plan (new orchestrator session)
@@ -209,7 +241,23 @@ For each phase, in order:
    - the phase's tests (+ neighbor suite for regressions)
 
    Logic drift (not just formatting) → send back or open a small fix phase.
+
+   **When measurement/experiment is the phase's deliverable (spike-type runs):**
+   "tests green" ≠ "the measured conclusion is correct". So additionally, **the
+   claims that decide the outcome** (anything an ADR or design decision rests on)
+   must be **independently reproduced by the orchestrator in a minimal setup that
+   does not depend on the worker's implementation** — at least one such claim. This
+   catches things no checklist item would (e.g. a worker's "foreignObject taints the
+   canvas, disqualified" turned out to have a `data:` escape hatch on independent
+   repro). If you can't reproduce it (environment limits etc.), say so in the GATE —
+   include what you tried and how.
 4. → **GATE: report OK?** Present the report *and* your verification result.
+   **On a bounce-back (差し戻し):** before writing the follow-up order, **snapshot the
+   current `report.md` to `report-r<N>.md`** (round number) — `.dev/` is gitignored, so
+   the pre-bounce report (incl. measurement numbers the worker will overwrite) is
+   otherwise lost, and the bounce is itself the record of "review changed the
+   conclusion". Write the follow-up as an appended "追補 N" section at the end of
+   `order.md` (don't rewrite the original order).
 5. On approval, **commit this phase** (see Conventions). Update `STATE.md`
    (`phases (k/N)`).
 
@@ -240,9 +288,11 @@ author can't. Default to a **separate session** (don't silently spawn a subagent
 A quick sweep over the cumulative diff before the PR, against this checklist:
 
 1. **Session/run-only jargon in comments** — review finding IDs (`M9`/`N2`),
-   approach names (`案B`), phase numbers — rewrite to reason-based. grep is a seed
-   (`（[MN][0-9]+）`, `案[A-Z]`, `Phase ?[0-9]`); judge by meaning, touch only this
-   task's diff.
+   approach names (`案B`), phase numbers, and any run-specific symbol — rewrite to
+   reason-based. The grep seed = **fixed patterns + STATE's 内部記号レジストリ**:
+   start from `（[MN][0-9]+）`, `案[A-Z]`, `Phase ?[0-9]`, then add a pattern for each
+   registered symbol (fixed patterns alone miss run-invented ones like `Q1c`/`U1〜U3`).
+   Judge by meaning, touch only this task's diff.
 2. **Over-commenting** (restating the obvious) → trim.
 3. **Missing comments** where a non-obvious invariant or "why" needs one → add.
 4. **Text/markdown defects** — mojibake (U+FFFD) via
@@ -296,6 +346,11 @@ Closes #<issue>
 - **No `Co-Authored-By` line** in commit messages.
 - **No AI-generated footer/signature** in PR bodies or commits (overrides base
   defaults).
+- **Review-round fixes are the orchestrator's commit.** Fixes for self-review
+  (Step 7) findings are committed by the **orchestrator as an independent commit
+  after the レビュー GATE approval** — even if a reviewer session drafted them. The
+  reviewer reports; the orchestrator commits and updates `STATE.md` (see the
+  one-STATE-writer principle).
 - **No auto-commit** outside the per-phase rule above; never commit speculatively.
 - If on the default branch, create a working branch before committing.
 - **Handoff files**: persistent harness artifacts go under `.dev/` (order, report,
