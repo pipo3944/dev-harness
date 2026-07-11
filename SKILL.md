@@ -30,6 +30,17 @@ so a human can follow along and intervene at any gate.
   doc exist to kill both.
 - **Human-gated, not autonomous.** At each GATE, stop and wait for the user's OK.
   Speed is not the goal here; not losing track is.
+- **Speak to the user in plain, self-contained terms.** Every user-facing message —
+  GATE presentations, `AskUserQuestion`, approach confirmations — must stand on its
+  own. **Never surface run-internal symbols** (finding IDs `F6`/`M9`, 論点 numbers,
+  approach names `案B`, plan item labels `(a)`) as if the user knows them; the user
+  doesn't hold your internal registry, and doing so reads as "answer this code I
+  won't explain". Say what you're actually unsure about and what you need decided,
+  in words. Introduce any needed technical term with its meaning on the spot.
+  - **Narrow what you defer to the user.** Decide engineering choices yourself and
+    let the independent reviews (Step 3/7) pressure-test them; bring to the user the
+    **product / preference** decisions that are genuinely theirs — with options and
+    background stated plainly.
 - **Durable handoff over chat.** Plans, orders, and reports live as `.md` files
   under `.dev/`, not buried in chat scrollback. Anyone can open the working dir
   and see exactly where things stand.
@@ -134,7 +145,9 @@ issue: #142
 ## 内部記号レジストリ
 <!-- 本運行で発明・使用した内部記号を、生まれるたびにここへ追記する。
      Step 8 hygiene の grep 種はこのレジストリから生成される。
-     例: 案A/案A'/案B（approach 呼称）, Q3/Q4（論点）, U1〜U3（未解決点）, ターゲット(a)/(b) -->
+     例: 案A/案A'/案B（approach 呼称）, Q3/Q4（論点）, U1〜U3（未解決点）, ターゲット(a)/(b)
+     注意: これは成果物 hygiene と内部管理のためのもの。ユーザーとの対話（GATE・質問）には
+     持ち込まない（記号のまま質問しない。plain-terms 原則を参照）。 -->
 - （なし）
 
 ## メモ
@@ -230,7 +243,9 @@ For each phase, in order:
    that hides context.
 2. **Execute in a separate session (default).** Stop and tell the user: "このパスを
    新規セッションで開いて実行してください" with the order path. The worker does the
-   work and writes `phase-NN-<slug>/report.md` from `references/report-template.md`.
+   work and writes `phase-NN-<slug>/report.md` using the report skeleton **inlined in
+   the order** (the worker has no skill loaded, so it can't resolve `references/...` —
+   expand the skeleton into the order rather than citing the path).
    Do **not** silently spawn a subagent — only if the user agreed up front.
 3. **Independent mechanical verification.** The worker's "formatted / tests green"
    is self-reported and can drift from the final saved files. So on the saved files,
@@ -239,6 +254,20 @@ For each phase, in order:
      fold it into the phase commit; don't bounce it back.
    - analyze (changed files)
    - the phase's tests (+ neighbor suite for regressions)
+
+   Run these **unpiped** and check each command's **exit code** yourself: piping to
+   `tail`/`head`/`grep` makes the pipeline exit code that of the last stage, so a
+   failure slips through the `&&` chain — the worker and verifier sharing that blind
+   spot is exactly how a defect passes the gate. Compare against the report's claimed
+   results; a report claiming green that you can't reproduce is a bounce-back.
+
+   **Cleanup safety.** If your verification does a destructive/temporary rewrite
+   (e.g. a break-test: corrupt a contract value → confirm tests fail), **don't undo
+   it with `git checkout` / `git restore` / `git stash`** — the phase artifacts are
+   still uncommitted at verify time (commits happen after the gate), so those wipe
+   the worker's uncommitted work along with your change. Reverse your own edit
+   **non-destructively** (inverse `sed`/Edit). If a git-based restore is truly
+   needed, snapshot the artifacts first (as with `report-r<N>.md`).
 
    Logic drift (not just formatting) → send back or open a small fix phase.
 
