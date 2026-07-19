@@ -6,7 +6,7 @@
 > step7 の実装後・差分レビューとは別物（こちらは設計の筋を問う）。
 
 ## 対象
-- approach: .dev/{dir}/approach.md
+- approach: .dev/dev-harness/{dir}/approach.md
 - 関連コード: path:line ...
 - issue: #{issue}
 

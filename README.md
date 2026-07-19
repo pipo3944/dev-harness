@@ -8,10 +8,10 @@
 
 - **理解が先、実装が後** — align 議論・アーキ批判レビュー・explain ドキュメントで、早すぎる実装と「もっともらしいだけの方針」を潰す
 - **人間ゲート式** — 各 GATE で止まり、ユーザーの OK を待つ。速さではなく筋を見失わないことが目的
-- **チャットではなく成果物で引き継ぎ** — 計画・指示・レポートは `.dev/` 配下の `.md` として残る
+- **チャットではなく成果物で引き継ぎ** — 計画・指示・レポートは `.dev/dev-harness/` 配下の `.md` として残る
 - **セッション分離は明示的** — 重い工程は新規セッションで走らせるが、勝手に subagent を spawn しない
 - **儀式は課題規模に比例** — 小さい課題はステップの統合・省略を提案してよい
-- **再開可能** — `.dev/{issue}-{slug}/STATE.md` を読んで途中から再開
+- **再開可能** — `.dev/dev-harness/{issue}-{slug}/STATE.md` を読んで途中から再開
 
 ## インストール
 
@@ -54,10 +54,11 @@ git clone git@github.com:pipo3944/dev-harness.git ~/.claude/skills/dev-harness
 
 ## 成果物レイアウト
 
-1課題ぶんが `.dev/{issue#}-{slug}/` 配下にまとまります（gitignored・個人用）。
+1課題ぶんが `.dev/dev-harness/{issue#}-{slug}/` 配下にまとまります（gitignored・個人用。
+`.dev/` は汎用領域なので、ハーネスは `dev-harness/` の名前空間内に書きます）。
 
 ```text
-.dev/{issue#}-{slug}/
+.dev/dev-harness/{issue#}-{slug}/
 ├── STATE.md              # 進捗トラッカー（毎回まずこれを読む）
 ├── approach.md           # 現状＋方針（step 2、step 3 で洗練）
 ├── approach-review/      # アーキ批判レビュー（step 3）
