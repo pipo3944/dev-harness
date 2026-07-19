@@ -19,8 +19,8 @@
 
 ## 背景・参照（必読）
 
-- approach: .dev/{dir}/approach.md
-- explain: .dev/{dir}/docs/explain/index.html
+- approach: .dev/dev-harness/{dir}/approach.md
+- explain: .dev/dev-harness/{dir}/docs/explain/index.html
 - issue: #{issue}
 - 関連コード: path:line ...
 - 直前フェーズ: ../phase-YY/report.md
