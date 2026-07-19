@@ -6,7 +6,7 @@
 
 ## 対象差分
 - `merge-base(main, HEAD)..HEAD` の累積差分（ファイル単体でなく全体）
-- issue: #<issue> / 受け入れ条件: approach.md・各 phase report.md 参照
+- issue: #{issue} / 受け入れ条件: approach.md・各 phase report.md 参照
 
 ## 観点
 コア + 課題に応じて増減。対象の言語/フレームワークは diff から判定すること（skill は言語非依存）。
