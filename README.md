@@ -28,7 +28,7 @@ git clone git@github.com:pipo3944/dev-harness.git ~/.claude/skills/dev-harness
 新しいセッションで、次のように起動します。
 
 ```
-/dev-harness <issue番号>
+/dev-harness {issue番号}
 ```
 
 または会話の中で「この課題をハーネスで進めて」のように依頼するだけでも起動します。
@@ -56,14 +56,14 @@ git clone git@github.com:pipo3944/dev-harness.git ~/.claude/skills/dev-harness
 
 1課題ぶんが `.dev/{issue#}-{slug}/` 配下にまとまります（gitignored・個人用）。
 
-```
+```text
 .dev/{issue#}-{slug}/
 ├── STATE.md              # 進捗トラッカー（毎回まずこれを読む）
 ├── approach.md           # 現状＋方針（step 2、step 3 で洗練）
 ├── approach-review/      # アーキ批判レビュー（step 3）
 ├── docs/explain/         # 方針確定後に生成（step 4）
 ├── plan.md               # フェーズ計画（step 5）
-├── phase-NN-<slug>/      # order.md / report.md（step 6）
+├── phase-NN-{slug}/      # order.md / report.md（step 6）
 └── review/               # round-N / final-report.md（step 7, 9）
 ```
 

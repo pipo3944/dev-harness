@@ -8,7 +8,7 @@
 ## 対象
 - approach: .dev/{dir}/approach.md
 - 関連コード: path:line ...
-- issue: #<issue>
+- issue: #{issue}
 
 ## レビュー観点
 対象の言語/フレームワークを diff・コードから判定し、その慣習と repo の既存流儀に照らすこと。
